@@ -38,7 +38,7 @@ fun MainScreen() {
                     label = { Text("BMI") }
                 )
                 NavigationBarItem(
-                    selgit ected = selectedTab == 1,
+                    selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
                     icon = { Text("Suhu") },
                     label = { Text("Suhu") }
