@@ -1,0 +1,4 @@
+com.example.ch06.test.app-androidTest-0 C:\Users\farre\OneDrive\Dokumen\season 5\Mobile Platform App Dev\praktikum\ch06_starter\ch06_starter\app\build\generated\res\resValues\androidTest\debug
+com.example.ch06.test.app-mergeDebugAndroidTestResources-1 C:\Users\farre\OneDrive\Dokumen\season 5\Mobile Platform App Dev\praktikum\ch06_starter\ch06_starter\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\merged.dir
+com.example.ch06.test.app-mergeDebugAndroidTestResources-2 C:\Users\farre\OneDrive\Dokumen\season 5\Mobile Platform App Dev\praktikum\ch06_starter\ch06_starter\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\stripped.dir
+com.example.ch06.test.app-debugAndroidTest-3 C:\Users\farre\OneDrive\Dokumen\season 5\Mobile Platform App Dev\praktikum\ch06_starter\ch06_starter\app\build\intermediates\merged_res\debugAndroidTest\mergeDebugAndroidTestResources
