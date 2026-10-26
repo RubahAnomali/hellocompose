@@ -1,0 +1,276 @@
+package com.example.ch09.ui.news
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import com.example.ch09.data.model.Article
+import com.example.ch09.data.model.NewsCategory
+import com.example.ch09.ui.components.ArticleCard
+import com.example.ch09.util.formatRelativeTime
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NewsScreen(
+    uiState: NewsUiState,
+    onQueryChange: (String) -> Unit,
+    onCategorySelected: (NewsCategory) -> Unit,
+    onArticleClick: (Article) -> Unit,
+    onRefresh: () -> Unit,
+    onRetry: () -> Unit
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("KabarKini") }
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
+            NewsSearchField(
+                query = uiState.query,
+                onQueryChange = onQueryChange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = 16.dp,
+                        vertical = 8.dp
+                    )
+            )
+
+            if (!uiState.isSearching) {
+                CategoryRow(
+                    categories = uiState.categories,
+                    selected = uiState.selectedCategory,
+                    onCategorySelected = onCategorySelected
+                )
+            }
+
+            uiState.offline?.let { offline ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Column(
+                        modifier = Modifier.padding(
+                            horizontal = 16.dp,
+                            vertical = 10.dp
+                        )
+                    ) {
+                        val age = formatRelativeTime(
+                            now = System.currentTimeMillis(),
+                            then = offline.cachedAt
+                        )
+
+                        Text(
+                            text = "Menampilkan data offline · diperbarui $age",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+
+                        Text(
+                            text = offline.reason,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+
+            PullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = onRefresh,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                when {
+                    uiState.isLoading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+
+                    uiState.errorMessage != null -> {
+                        ErrorState(
+                            message = uiState.errorMessage,
+                            onRetry = onRetry
+                        )
+                    }
+
+                    uiState.articles.isEmpty() -> {
+                        CenteredMessage(
+                            text = if (uiState.isSearching) {
+                                "Tidak ada berita untuk \"${uiState.query.trim()}\"."
+                            } else {
+                                "Tidak ada berita ditemukan."
+                            }
+                        )
+                    }
+
+                    else -> {
+                        val now = remember(uiState.articles) {
+                            System.currentTimeMillis()
+                        }
+
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(
+                                items = uiState.articles,
+                                key = { it.url }
+                            ) { article ->
+                                ArticleCard(
+                                    article = article,
+                                    now = now,
+                                    onClick = {
+                                        onArticleClick(article)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NewsSearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = modifier,
+        placeholder = {
+            Text("Cari berita...")
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = null
+            )
+        },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(
+                    onClick = { onQueryChange("") }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Clear,
+                        contentDescription = "Hapus pencarian"
+                    )
+                }
+            }
+        },
+        singleLine = true
+    )
+}
+
+@Composable
+private fun CategoryRow(
+    categories: List<NewsCategory>,
+    selected: NewsCategory,
+    onCategorySelected: (NewsCategory) -> Unit
+) {
+    LazyRow(
+        modifier = Modifier.padding(bottom = 8.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(
+            items = categories,
+            key = { it.apiValue }
+        ) { category ->
+            FilterChip(
+                selected = category == selected,
+                onClick = { onCategorySelected(category) },
+                label = { Text(category.label) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ErrorState(
+    message: String,
+    onRetry: () -> Unit
+) {
+    ScrollableCenter {
+        Icon(
+            imageVector = Icons.Filled.WifiOff,
+            contentDescription = null,
+            modifier = Modifier.size(48.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        Text(
+            text = message,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        Button(onClick = onRetry) {
+            Text("Coba Lagi")
+        }
+    }
+}
+
+@Composable
+private fun CenteredMessage(text: String) {
+    ScrollableCenter {
+        Text(
+            text = text,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun ScrollableCenter(
+    content: @Composable ColumnScope.() -> Unit
+) {
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        val viewportHeight = maxHeight
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .heightIn(min = viewportHeight)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            content = content
+        )
+    }
+}
